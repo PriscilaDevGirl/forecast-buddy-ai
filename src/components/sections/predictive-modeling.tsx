@@ -132,24 +132,98 @@ export function PredictiveModeling({ data, onForecastGenerated }: PredictiveMode
   };
 
   const generateForecast = () => {
-    // Mock forecast data for 5 weeks of January 2023
+    // Advanced forecasting algorithm based on historical data
     const forecast = [];
-    const pdvSample = [1023, 1045, 1067, 1089, 1101];
-    const productSample = [123, 234, 456, 789, 101];
+    
+    if (!data || !data.length) {
+      console.warn('No historical data available for forecasting');
+      return [];
+    }
 
-    for (let week = 1; week <= 5; week++) {
-      for (const pdv of pdvSample) {
-        for (const product of productSample) {
-          forecast.push({
-            semana: week,
-            pdv: pdv,
-            produto: product,
-            quantidade: Math.floor(Math.random() * 200) + 50
-          });
-        }
+    // Aggregate historical data by PDV and Product
+    const historicalAgg = new Map();
+    data.forEach(row => {
+      const key = `${row.pdv}-${row.produto}`;
+      if (!historicalAgg.has(key)) {
+        historicalAgg.set(key, {
+          pdv: row.pdv,
+          produto: row.produto,
+          weeklyQuantities: [],
+          totalQuantity: 0,
+          avgQuantity: 0,
+          trend: 0,
+          seasonality: []
+        });
+      }
+      
+      const entry = historicalAgg.get(key);
+      entry.weeklyQuantities.push(row.quantidade || 0);
+      entry.totalQuantity += (row.quantidade || 0);
+    });
+
+    // Calculate statistics and generate forecasts
+    for (const [key, stats] of historicalAgg) {
+      if (stats.weeklyQuantities.length === 0) continue;
+      
+      // Calculate average and trend
+      stats.avgQuantity = stats.totalQuantity / stats.weeklyQuantities.length;
+      
+      // Simple linear trend calculation
+      const n = stats.weeklyQuantities.length;
+      if (n > 1) {
+        const xSum = (n * (n - 1)) / 2;
+        const ySum = stats.totalQuantity;
+        const xySum = stats.weeklyQuantities.reduce((sum, y, i) => sum + (i * y), 0);
+        const x2Sum = (n * (n - 1) * (2 * n - 1)) / 6;
+        
+        stats.trend = (n * xySum - xSum * ySum) / (n * x2Sum - xSum * xSum) || 0;
+      }
+      
+      // Calculate seasonality (last 4 weeks pattern)
+      const recentWeeks = stats.weeklyQuantities.slice(-4);
+      const recentAvg = recentWeeks.reduce((a, b) => a + b, 0) / recentWeeks.length;
+      const seasonalFactors = recentWeeks.map(q => recentAvg > 0 ? q / recentAvg : 1);
+      
+      // Generate forecast for 5 weeks of January 2023
+      for (let week = 1; week <= 5; week++) {
+        // Base forecast with trend
+        let baseForecast = stats.avgQuantity + (stats.trend * (n + week));
+        
+        // Apply seasonality
+        const seasonalIndex = (week - 1) % seasonalFactors.length;
+        const seasonalFactor = seasonalFactors[seasonalIndex] || 1;
+        
+        // Apply dampening factor for extreme values
+        const dampening = Math.max(0.1, Math.min(2.0, seasonalFactor));
+        let finalForecast = baseForecast * dampening;
+        
+        // Apply business rules and constraints
+        finalForecast = Math.max(1, Math.round(finalForecast * 0.85)); // Conservative 15% reduction
+        
+        // Add some controlled variance based on historical volatility
+        const volatility = stats.weeklyQuantities.length > 1 ? 
+          Math.sqrt(stats.weeklyQuantities.reduce((sum, q) => sum + Math.pow(q - stats.avgQuantity, 2), 0) / stats.weeklyQuantities.length) : 0;
+        
+        const variance = volatility * 0.1 * (Math.random() - 0.5); // Small controlled variance
+        finalForecast = Math.max(0, Math.round(finalForecast + variance));
+        
+        forecast.push({
+          semana: week,
+          pdv: stats.pdv,
+          produto: stats.produto,
+          quantidade: finalForecast
+        });
       }
     }
 
+    // Sort by week, then PDV, then product
+    forecast.sort((a, b) => {
+      if (a.semana !== b.semana) return a.semana - b.semana;
+      if (a.pdv !== b.pdv) return a.pdv - b.pdv;
+      return a.produto - b.produto;
+    });
+
+    console.log(`Generated ${forecast.length} forecasts using advanced algorithm`);
     return forecast;
   };
 
