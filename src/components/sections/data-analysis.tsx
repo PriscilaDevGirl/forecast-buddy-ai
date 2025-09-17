@@ -25,15 +25,17 @@ import {
   DollarSign, 
   Calendar,
   Brain,
-  Download
+  Download,
+  Code
 } from "lucide-react";
 
 interface DataAnalysisProps {
   data: any;
   onStartModeling: () => void;
+  onStartPythonTesting: () => void;
 }
 
-export function DataAnalysis({ data, onStartModeling }: DataAnalysisProps) {
+export function DataAnalysis({ data, onStartModeling, onStartPythonTesting }: DataAnalysisProps) {
   const [activeTab, setActiveTab] = useState("overview");
 
   // Mock data for charts
@@ -272,7 +274,15 @@ export function DataAnalysis({ data, onStartModeling }: DataAnalysisProps) {
           className="bg-gradient-primary hover:opacity-90"
         >
           <Brain className="mr-2 h-5 w-5" />
-          Iniciar Modelagem Preditiva
+          Modelagem JS
+        </Button>
+        <Button 
+          onClick={onStartPythonTesting}
+          size="lg" 
+          variant="outline"
+        >
+          <Code className="mr-2 h-5 w-5" />
+          Laboratório Python
         </Button>
       </div>
     </div>

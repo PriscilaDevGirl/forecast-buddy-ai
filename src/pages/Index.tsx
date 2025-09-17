@@ -2,13 +2,14 @@ import { useState } from "react";
 import { DataUpload } from "@/components/sections/data-upload";
 import { DataAnalysis } from "@/components/sections/data-analysis";
 import { PredictiveModeling } from "@/components/sections/predictive-modeling";
+import { PythonTesting } from "@/components/sections/python-testing";
 import { ForecastResults } from "@/components/sections/forecast-results";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Database, Brain, Target, ArrowLeft } from "lucide-react";
+import { CheckCircle, Database, Brain, Target, ArrowLeft, Code } from "lucide-react";
 
-type AppStep = 'upload' | 'analysis' | 'modeling' | 'results';
+type AppStep = 'upload' | 'analysis' | 'modeling' | 'python-testing' | 'results';
 
 const Index = () => {
   const [currentStep, setCurrentStep] = useState<AppStep>('upload');
@@ -19,6 +20,7 @@ const Index = () => {
     { id: 'upload', title: 'Upload de Dados', icon: Database },
     { id: 'analysis', title: 'Análise Exploratória', icon: Database },
     { id: 'modeling', title: 'Modelagem Preditiva', icon: Brain },
+    { id: 'python-testing', title: 'Testes Python', icon: Code },
     { id: 'results', title: 'Resultados', icon: Target }
   ];
 
@@ -35,13 +37,17 @@ const Index = () => {
     setCurrentStep('modeling');
   };
 
+  const handleStartPythonTesting = () => {
+    setCurrentStep('python-testing');
+  };
+
   const handleForecastGenerated = (forecast: any[]) => {
     setForecastData(forecast);
     setCurrentStep('results');
   };
 
   const goBack = () => {
-    const stepOrder: AppStep[] = ['upload', 'analysis', 'modeling', 'results'];
+    const stepOrder: AppStep[] = ['upload', 'analysis', 'modeling', 'python-testing', 'results'];
     const currentIndex = stepOrder.indexOf(currentStep);
     if (currentIndex > 0) {
       setCurrentStep(stepOrder[currentIndex - 1]);
@@ -116,12 +122,20 @@ const Index = () => {
         {currentStep === 'analysis' && processedData && (
           <DataAnalysis 
             data={processedData} 
-            onStartModeling={handleStartModeling} 
+            onStartModeling={handleStartModeling}
+            onStartPythonTesting={handleStartPythonTesting}
           />
         )}
 
         {currentStep === 'modeling' && processedData && (
           <PredictiveModeling 
+            data={processedData}
+            onForecastGenerated={handleForecastGenerated}
+          />
+        )}
+
+        {currentStep === 'python-testing' && processedData && (
+          <PythonTesting 
             data={processedData}
             onForecastGenerated={handleForecastGenerated}
           />
